@@ -301,7 +301,7 @@ def vtk_polydata_to_topomesh(polydata):
 
 def link_polydata_triangle_cells(polydata,img,img_graph=None):
     if img_graph is None:
-        from openalea.image.algo.graph_from_image   import graph_from_image
+        from openalea.image.algo.graph_from_image import graph_from_image
         img_graph = graph_from_image(img,spatio_temporal_properties=['barycenter','volume'],ignore_cells_at_stack_margins = False,property_as_real=True)
 
     polydata_cell_data = polydata.GetCellData().GetArray(0)
@@ -710,11 +710,6 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
 
 
 def topomesh_to_vtk_polydata(topomesh,degree=2,positions=None,topomesh_center=None,coef=1):
-    import numpy as np
-    import vtk
-    from time import time
-    from openalea.container import array_dict
-
     if positions is None:
         positions = topomesh.wisp_property('barycenter',0)
         
@@ -792,6 +787,13 @@ def topomesh_to_vtk_polydata(topomesh,degree=2,positions=None,topomesh_center=No
 
     return vtk_mesh
 
+def isiterable(obj):
+    try:
+        iter(obj)
+        return True
+    except:
+        return False
+
 def draw_triangular_mesh(mesh, mesh_id=None, colormap=None):
     import openalea.plantgl.all as pgl
     import openalea.plantgl.ext.color as color
@@ -856,9 +858,6 @@ def image_to_pgl_mesh(img,sampling=4,cell_coef=1.0,mesh_fineness=1.0,smooth=1.0,
 
 
 def image_to_triangular_mesh(img,sampling=4,cell_coef=1.0,mesh_fineness=1.0,smooth=1.0,resolution=None):
-    from openalea.cellcomplex.triangular_mesh import TriangularMesh
-    from time import time
-
     if resolution is None:
         try:
             resolution = img.resolution
