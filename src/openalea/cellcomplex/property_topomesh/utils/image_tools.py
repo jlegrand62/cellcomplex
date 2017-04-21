@@ -19,6 +19,7 @@
 
 
 import numpy as np
+import scipy.ndimage as nd
 
 try:
     import vtk
@@ -576,7 +577,18 @@ def image_to_vtk_polydata(img,considered_cells=None,mesh_center=None,coef=1.0,me
 
 
 def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1.0,mesh_fineness=1.0,smooth_factor=1.0):
-
+    """
+    Create a mesh for each `considered_cells` from `img` and returns a vtkPolyData.
+    Use `vtkDiscreteMarchingCubes` and `vtkWindowedSincPolyDataFilter` to create cell-surface and decimate it.
+    
+    :Arguments:
+      - img: SpatialImage
+      - considered_cells: list of labels to save in the vtk object
+      - mesh_center: [0,0,0] by default
+      - coef: cell-contraction coefficient
+      - mesh_fineness: the smaller the more decimation!
+      - smooth_factor: number of vtk-smoothing iteration * 8 !
+    """
     start_time = time()
     print "--> Generating vtk mesh from image"
 
@@ -584,7 +596,7 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
     vtk_points = vtk.vtkPoints()
     vtk_triangles = vtk.vtkCellArray()
     vtk_cells = vtk.vtkLongArray()
-    
+
     nx, ny, nz = img.shape
     data_string = img.tostring('F')
 
@@ -607,11 +619,22 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
         #mesh_center = np.array(img.resolution)*np.array(img.shape)/2.
         mesh_center = np.array([0,0,0])
 
+    # Detecting cell bounding boxes with `scipy.ndimage.find_objects`:
+    print "Detecting cell bounding boxes with `scipy.ndimage.find_objects`...",
+    bbox = nd.find_objects(img)
+    print "Done!"
+
+    print "Meshing cell countours with `vtkDiscreteMarchingCubes`:"
     for label in considered_cells:
-
         cell_start_time = time()
-
-        cell_volume = (img==label).sum()*np.array(img.resolution).prod()
+        # Compute the cell volume:
+        try:
+            # NB: `scipy.ndimage.find_objects` start at 1 (and python index at 0), hence to access i-th element, we have to use (i-1)-th index!
+            crop_img = img[bbox[label-1]]
+            cell_volume = (crop_img==label).sum()*np.array(img.resolution).prod()
+        except:
+            print "No boundingbox for cell {}!".format(label)
+            cell_volume = (img==label).sum()*np.array(img.resolution).prod()
 
         # mask_data = vtk.vtkImageThreshold()
         # mask_data.SetInputConnection(reader.GetOutputPort())
@@ -695,7 +718,8 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
                 vtk_cells.InsertValue(poly,label)
 
         cell_end_time = time()
-        print "  --> Cell",label,":",decimate.GetOutput().GetNumberOfCells(),"triangles (",cell_volume," microm3 ) [",cell_end_time-cell_start_time,"s]"
+        #~ print "  --> Cell",label,":",decimate.GetOutput().GetNumberOfCells(),"triangles (",cell_volume," microm3 ) [",cell_end_time-cell_start_time,"s]"
+        print "  --> Cell {}: {} triangles ({}microm3) [{}s]".format(label, decimate.GetOutput().GetNumberOfCells(), np.round(cell_volume,1), np.round(cell_end_time-cell_start_time,3))
 
     vtk_mesh.SetPoints(vtk_points)
     vtk_mesh.SetPolys(vtk_triangles)
@@ -704,7 +728,7 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
     print "  <-- Cell Mesh      : ",vtk_mesh.GetPoints().GetNumberOfPoints()," Points,",vtk_mesh.GetNumberOfCells()," Triangles, ",len(considered_cells)," Cells"
 
     end_time = time()
-    print "<-- Generating vtk mesh from image      [",end_time-start_time,"s]"
+    print "<-- Generating vtk mesh from image      [",np.round(end_time-start_time,1),"s]"
 
     return vtk_mesh
 
