@@ -25,7 +25,25 @@ from scipy.cluster.vq                       import kmeans, vq
 from openalea.container.array_dict             import array_dict
 
 import matplotlib
-matplotlib.use( "MacOSX" )
+
+import platform
+if (platform.system() == 'Linux'):
+    try:
+        matplotlib.use( 'Qt4Agg' )
+    except:
+        print "Error: Unable to set 'Qt4Agg' backend! Check 'PyQt4' is installed!"
+        sys.exit(-1)
+elif (platform.system() == 'Darwin'):
+    try:
+        matplotlib.use( 'MacOSX' )
+    except:
+        print "Error: Unable to set 'MacOSX' backend!"
+        sys.exit(-1)
+else:
+    supp_platforms = ['Linux', 'Darwin']
+    print "Supported platforms: {}".format(supp_platforms)
+    sys.exit(-1)
+
 import matplotlib.pyplot as plt
 
 from cute_plot              import simple_plot, density_plot, smooth_plot, histo_plot, bar_plot, violin_plot, spider_plot
@@ -54,7 +72,7 @@ else:
 
         classes = np.unique(data_classes)
         n_classes = len(classes)
-        print classes
+        print "Given classes: {}".format(classes)
 
         if np.array(class_colors).ndim == 1:
             class_colors = np.array([class_colors for c in classes])
@@ -82,11 +100,15 @@ else:
         features_mean = np.mean(classification_data,axis=0)
         features_std = np.std(classification_data,axis=0)
 
-        centered_data = (classification_data - features_mean)
-        center_reduced_data = (classification_data - features_mean)/features_std
-        center_reduced_data[np.isnan(center_reduced_data)] = 0.
-
-        pca_data = center_reduced_data
+        center_reduce = kwargs.get('center_reduce',True)
+        if center_reduce:
+            centered_data = (classification_data - features_mean)
+            center_reduced_data = (classification_data - features_mean)/features_std
+            center_reduced_data[np.isnan(center_reduced_data)] = 0.
+            pca_data = center_reduced_data
+        else:
+            pca_data = classification_data
+            pca_data[np.isnan(pca_data)] = 0.
 
         pca = PCA(n_components=n_components)
         pca.fit(pca_data)
@@ -102,6 +124,8 @@ else:
 
         data_axes = np.diagflat(np.ones(pca_data.shape[1]))
         projected_axes = pca.transform(data_axes)
+        for i,a in enumerate(projected_axes):
+            print "{} contribution to PCA-axis1={}, PCA-axis2={}".format(features[1:][i], a[0], a[1]) 
 
         # cmap = CurvMap(classes.min(),classes.max())
 
@@ -229,4 +253,4 @@ else:
         # print "  --> Linear SVM on "+n_components+" components : ",good_classification_test,"( ",good_classification_train,") good classification    (Random :",random_classification_test,")"
 
 
-        return pca, projected_data
+        return pca, projected_data, projected_axes
