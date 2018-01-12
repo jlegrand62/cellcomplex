@@ -1044,7 +1044,7 @@ def compute_topomesh_property(topomesh, property_name, degree=0, positions=None,
             if not topomesh.has_wisp_property('normal',degree=0,is_computed=True):
                 compute_topomesh_property(topomesh,'normal',degree=0)
 
-            if not topomesh.has_wisp_property('neighors',degree=0,is_computed=True):
+            if not topomesh.has_wisp_property('neighbors',degree=0,is_computed=True):
                 compute_topomesh_property(topomesh,'region_neighbors',0)
             if not topomesh.has_wisp_property('epidermis',degree=2,is_computed=True):
                 compute_topomesh_property(topomesh,'epidermis',2)
