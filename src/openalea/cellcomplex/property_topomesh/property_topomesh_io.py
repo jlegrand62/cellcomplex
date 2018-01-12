@@ -97,10 +97,10 @@ def save_property_topomesh(topomesh, path, cells_to_save=None, properties_to_sav
     wisps_to_save[3] = cells_to_save
 
     wisps_to_wids = {}
-    wisps_to_wids[0] = vertices_to_pids 
-    wisps_to_wids[1] = edges_to_eids 
-    wisps_to_wids[2] = triangles_to_fids 
-    wisps_to_wids[3] = cells_to_cids 
+    wisps_to_wids[0] = vertices_to_pids
+    wisps_to_wids[1] = edges_to_eids
+    wisps_to_wids[2] = triangles_to_fids
+    wisps_to_wids[3] = cells_to_cids
 
     if not 0 in properties_to_save.keys():
         properties_to_save[0] = []
@@ -253,7 +253,7 @@ def save_ply_cellcomplex_topomesh(topomesh,ply_filename,properties_to_save=dict(
 
     ply_file.write("element global 1\n")
     ply_file.write("property list char type\n")
-    ply_file.write("end_header\n")   
+    ply_file.write("end_header\n")
 
     vertex_index = {}
     for v,pid in enumerate(topomesh.wisps(0)):
@@ -377,9 +377,14 @@ def save_ply_property_topomesh(topomesh,ply_filename,properties_to_save=dict([(0
     ply_file.write("property float y\n")
     ply_file.write("property float z\n")
     for property_name in properties_to_save[0]:
-        if property_name != coordinatepropname and topomesh.has_wisp_property(property_name,0,is_computed=True):
+        if property_name == coordinatepropname:
+            continue
+        elif topomesh.has_wisp_property(property_name, 0, is_computed=True):
             property_type = property_types[str(topomesh.wisp_property(property_name,0).values().dtype)]
             ply_file.write("property "+property_type+" "+property_name+"\n")
+        else:
+            print "WARNING: property '{}' has not been saved!".format(property_name)
+
 
     ply_file.write("element face "+str(topomesh.nb_wisps(2))+"\n")
     ply_file.write("property list int int vertex_index\n")
@@ -404,7 +409,7 @@ def save_ply_property_topomesh(topomesh,ply_filename,properties_to_save=dict([(0
     ply_file.write("property list int int face_index\n")
     ply_file.write("property int label\n")
 
-    ply_file.write("end_header\n")    
+    ply_file.write("end_header\n")
     vertex_index = {}
     for v,pid in enumerate(topomesh.wisps(0)):
         ply_file.write(str(topomesh.wisp_property(coordinatepropname,0)[pid][0])+" ")
@@ -418,7 +423,7 @@ def save_ply_property_topomesh(topomesh,ply_filename,properties_to_save=dict([(0
                 else:
                     ply_file.write(str(topomesh.wisp_property(property_name,0)[pid])+" ")
         ply_file.write("\n")
-        vertex_index[pid] = v        
+        vertex_index[pid] = v
 
     face_index = {}
     for t,fid in enumerate(topomesh.wisps(2)):
@@ -528,7 +533,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
                 properties_types[element_name] = {}
                 properties_list_types[element_name] = {}
                 properties_tensor_dims[element_name] = {}
-                
+
             if re.split(' ',line)[0] == 'property':
                 # print line
                 property_name = re.split(' ',line)[-1][:-1]
@@ -543,7 +548,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
                     properties_list_types[element_name][property_name] = list_type
         except Exception, e:
                 raise ValueError(ply_filename, lineno, line, e)
-            
+
         lineno, line = ply_stream.next()
 
     if verbose: print n_wisps
@@ -624,7 +629,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
 
     element_matching['vertex'] = point_matching
     if verbose: print len(unique_points)," Unique Points"
-    if timecheck: print 'point unicity test:',time()-check_time 
+    if timecheck: print 'point unicity test:',time()-check_time
 
     if timecheck: check_time =time()
     faces = np.array(face_vertices.values())
@@ -648,7 +653,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
             triangle_matching = array_dict()
     element_matching['face'] = triangle_matching
     if verbose: print len(unique_triangles)," Unique Faces"
-    if timecheck: print 'face unicity test:',time()-check_time 
+    if timecheck: print 'face unicity test:',time()-check_time
 
     if timecheck: check_time =time()
     if n_wisps.has_key('edge'):
@@ -669,7 +674,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
             for eid, fid in zip(face_edge_matching, face_edge_faces):
                 if eid is not None:
                     edge_faces[eid] += [fid]
-            
+
     else:
         if triangular:
             edge_vertices = dict(zip(range(3*len(unique_triangles)),np.sort(np.concatenate([np.transpose([v,list(v[1:])+[v[0]]]) for v in unique_triangles]))))
@@ -681,7 +686,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
             edge_vertices = dict(zip(edge_index,np.sort(np.concatenate([np.transpose([v,list(v[1:])+[v[0]]]) for v in unique_triangles]))))
             edge_faces = dict(zip(edge_index,np.concatenate([fid*np.ones_like(unique_triangles[fid]) for fid in xrange(len(unique_triangles))])))
 
-    if verbose: print len(edge_vertices)," Edges" 
+    if verbose: print len(edge_vertices)," Edges"
 
     if len(edge_vertices)>0:
         unique_edges = array_unique(np.sort(edge_vertices.values()))
@@ -697,8 +702,8 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
 
     element_matching['edge'] = edge_matching
     if verbose: print len(unique_edges)," Unique Edges"
-    if timecheck: print 'edge unicity test:',time()-check_time 
-    
+    if timecheck: print 'edge unicity test:',time()-check_time
+
     if timecheck: check_time =time()
     face_cells = {}
     for fid in xrange(len(unique_triangles)):
@@ -732,7 +737,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
             face_cells[triangle_matching[f]] = {0}
     element_matching['volume'] = cell_matching
     if verbose: print len(cell_matching)," Cells"
-    if timecheck: print 'cell unicity test:',time()-check_time 
+    if timecheck: print 'cell unicity test:',time()-check_time
 
 
     if timecheck: check_time =time()
@@ -740,10 +745,10 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
 
     for pid in xrange(len(unique_points)):
         topomesh.add_wisp(0,pid)
-    
+
     for fid in xrange(len(unique_triangles)):
         topomesh.add_wisp(2,fid)
-        for cid in face_cells[fid]:           
+        for cid in face_cells[fid]:
             if not topomesh.has_wisp(3, cid):
                 topomesh.add_wisp(3,cid)
             topomesh.link(3,cid,fid)
@@ -759,10 +764,10 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
             for f in edge_faces[e]:
                 fid = triangle_matching[f]
                 topomesh.link(2,fid,eid)
-        else:   
+        else:
             fid = edge_faces[e]
             topomesh.link(2,fid,eid)
-    if timecheck: print 'topomesh topo creation:',time()-check_time 
+    if timecheck: print 'topomesh topo creation:',time()-check_time
 
     topomesh.update_wisp_property('barycenter',0,array_dict(unique_points,np.arange(len(unique_points))))
 
@@ -780,7 +785,7 @@ def read_ply_property_topomesh(ply_filename, verbose = False):
                     for w in element_properties[element_name].keys():
                         property_dict[element_matching[element_name][w]] = element_properties[element_name][w][property_name]
                     topomesh.update_wisp_property(property_name,property_degree,array_dict(property_dict))
-    if timecheck: print 'topomesh creation:',time()-check_time 
+    if timecheck: print 'topomesh creation:',time()-check_time
 
     if verbose:
         end_time = time()
@@ -832,7 +837,7 @@ def read_obj_property_topomesh(obj_filename, verbose=True):
     return topomesh
 
 def save_obj_property_topomesh(topomesh, obj_filename, reorient_faces=False, verbose=False):
-    
+
     if reorient_faces:
         compute_topomesh_property(topomesh,'normal',2,normal_method='orientation')
 
@@ -951,7 +956,7 @@ def read_msh_property_topomesh(msh_filename, preserve_cells=True, verbose=False)
             e_nodes = np.array([re.split(' ',line)[3+n_tags+i] for i in xrange(element_node_number[e_type])]).astype(int)
         except KeyError:
             raise KeyError("MSH Element type "+str(e_type)+" not handled yet!")
-        
+
         if e_type == 2:
             faces += [list(e_nodes)]
             face_cells += [cell]
@@ -986,8 +991,3 @@ def meshread(filename):
             return read_obj_property_topomesh(filename)
         elif extension == '.msh':
             return read_msh_property_topomesh(filename)
-
-
-
-
-
