@@ -36,10 +36,14 @@ except ImportError:
 
 from openalea.container import array_dict
 
-from openalea.image.spatial_image import SpatialImage
+try:
+    from timagetk.components import SpatialImage
+except:
+    from openalea.image.spatial_image import SpatialImage
 
 from openalea.cellcomplex.property_topomesh import PropertyTopomesh
 from openalea.cellcomplex.triangular_mesh import TriangularMesh
+from openalea.cellcomplex.triangular_mesh.triangular_mesh import isiterable
 from openalea.cellcomplex.property_topomesh.property_topomesh_extraction import cell_topomesh
 from openalea.cellcomplex.property_topomesh.utils.array_tools import array_unique
 
@@ -588,7 +592,7 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
     vtk_cells = vtk.vtkLongArray()
     
     nx, ny, nz = img.shape
-    data_string = img.tostring('F')
+    data_string = img.get_array().tostring('F')
 
     reader = vtk.vtkImageImport()
     reader.CopyImportVoidPointer(data_string, len(data_string))
@@ -613,7 +617,7 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
 
         cell_start_time = time()
 
-        cell_volume = (img==label).sum()*np.array(img.voxelsize).prod()
+        cell_volume = (img.get_array()==label).sum()*np.array(img.voxelsize).prod()
 
         # mask_data = vtk.vtkImageThreshold()
         # mask_data.SetInputConnection(reader.GetOutputPort())
@@ -623,10 +627,10 @@ def image_to_vtk_cell_polydata(img,considered_cells=None,mesh_center=None,coef=1
         # mask_data.SetOutValue(0)
         contour = vtk.vtkDiscreteMarchingCubes()
         # contour.SetInput(mask_data.GetOutput())
-        SetInput(contour,reader.GetOutput())
+        SetInput(contour, reader.GetOutput())
         contour.ComputeNormalsOn()
         contour.ComputeGradientsOn()
-        contour.SetValue(0,label)
+        contour.SetValue(0, label)
         contour.Update()
 
         # print "    --> Marching Cubes : ",contour.GetOutput().GetPoints().GetNumberOfPoints()," Points,",contour.GetOutput().GetNumberOfCells()," Triangles,  1 Cell"
