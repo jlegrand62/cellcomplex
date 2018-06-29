@@ -63,7 +63,7 @@ def array_unique(array, return_index=False):
 
 def where_list(array, values):
     """
-    Search list of 'values' in 'array'.
+    Search list of 'values' in 'array', and return their index within the array.
 
     Parameters
     ----------
@@ -75,7 +75,19 @@ def where_list(array, values):
     Returns
     -------
     where_list : list
-        list of indexes corresponding to given 'values'
+        list of indexes corresponding to given 'values', number of arrays within
+        this list depend on the dimensionality of the given array
+
+    Examples
+    --------
+    >>> from openalea.cellcomplex.property_topomesh.utils.array_tools import where_list
+    >>> a = np.array([[0, 1, 2, 3, 4],
+                      [0, 1, 2, 3, 4],
+                      [1, 2, 3, 4, 5],
+                      [1, 2, 3, 4, 5]])
+    >>> l = [0, 5]
+    >>> where_list(a, l)
+    (array([0, 1, 2, 3]), array([0, 0, 4, 4]))
     """
     mask = nd.sum(np.ones_like(values), values, index=array)
     return np.where(mask > 0)
@@ -98,7 +110,19 @@ def array_difference(array, subarray):
     -------
     array_difference : np.array
         the numpy array made of 'array' missing in 'subarray'.
+
+    Examples
+    --------
+    >>> from openalea.cellcomplex.property_topomesh.utils.array_tools import array_difference
+    >>> a = np.array([[0, 1, 2, 3, 4],
+                      [0, 1, 2, 3, 4],
+                      [1, 2, 3, 4, 5],
+                      [1, 2, 3, 4, 5]])
+    >>> b = np.array([0, 1, 2, 3, 4])
+    >>> array_difference(a, b)
     """
+    # TODO: set(np.array) does not work: "TypeError: unhashable type: 'numpy.ndarray'" !!!!
+    # TODO: fix and add the result of 'array_difference(a, b)' in the example
     import numpy as np
     return np.array(list(set(array).difference(set(subarray))))
 
